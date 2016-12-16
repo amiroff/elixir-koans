@@ -4,30 +4,30 @@ defmodule Processes do
   @intro "Processes"
 
   koan "You are a process" do
-    assert Process.alive?(self) == ___
+    assert Process.alive?(self) == true
   end
 
   koan "You can ask a process to introduce itself" do
     information = Process.info(self)
 
-    assert information[:status] == ___
+    assert information[:status] == :running
   end
 
   koan "Processes are referenced by their process ID (pid)" do
-    assert is_pid(self) == ___
+    assert is_pid(self) == true
   end
 
   koan "New processes are spawned functions" do
     pid = spawn(fn -> nil end)
 
-    assert Process.alive?(pid) == ___
+    assert Process.alive?(pid) == true
   end
 
   koan "Processes can send and receive messages" do
     send self, "hola!"
 
     receive do
-      msg -> assert msg == ___
+      msg -> assert msg == "hola!"
     end
   end
 
@@ -35,8 +35,8 @@ defmodule Processes do
     send self, "hola!"
     send self, "como se llama?"
 
-    assert_receive ___
-    assert_receive ___
+    assert_receive "hola!"
+    assert_receive "como se llama?"
   end
 
   koan "A common pattern is to include the sender in the message, so that it can reply" do
@@ -49,7 +49,7 @@ defmodule Processes do
     pid = spawn(greeter)
 
     send pid, {:hello, self}
-    assert_receive ___
+    assert_receive :how_are_you?
   end
 
   def yelling_echo_loop do
@@ -64,10 +64,10 @@ defmodule Processes do
     pid = spawn_link(&yelling_echo_loop/0)
 
     send pid, {self, "o"}
-    assert_receive ___
+    assert_receive "O"
 
     send pid, {self, "hai"}
-    assert_receive ___
+    assert_receive "HAI"
   end
 
   def state(value) do
@@ -87,11 +87,11 @@ defmodule Processes do
     end)
 
     send pid, {self, :get}
-    assert_receive ___
+    assert_receive "foo"
 
     send pid, {self, :set, "bar"}
     send pid, {self, :get}
-    assert_receive ___
+    assert_receive "bar"
   end
 
   koan "Waiting for a message can get boring" do
@@ -102,7 +102,7 @@ defmodule Processes do
                 end
            end)
 
-    assert_receive ___
+    assert_receive {:waited_too_long, "I am impatient"}
   end
 
   koan "Trapping will allow you to react to someone terminating the process" do
@@ -121,19 +121,19 @@ defmodule Processes do
 
     Process.exit(pid, :random_reason)
 
-    assert_receive ___
+    assert_receive {:exited, :random_reason}
   end
 
   koan "Parent processes can trap exits for children they are linked to" do
     Process.flag(:trap_exit, true)
     spawn_link(fn -> Process.exit(self, :normal) end)
 
-    assert_receive {:EXIT, _pid, ___}
+    assert_receive {:EXIT, _pid, :normal}
   end
 
   koan "If you monitor your children, you'll be automatically informed for their depature" do
     spawn_monitor(fn -> Process.exit(self, :normal) end)
 
-    assert_receive {:DOWN, _ref, :process, _pid, ___}
+    assert_receive {:DOWN, _ref, :process, _pid, :normal}
   end
 end
